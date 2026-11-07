@@ -5,7 +5,9 @@ Two empirical studies of daily market data:
 1. **Sector factor structure:** PCA on ten years of daily excess returns for ~100 large-cap US stocks, to find what drives co-movement and whether GICS sectors show up as real clusters.
 2. **BTC vs ETH predictability:** tests whether a week of lagged returns can predict which of Bitcoin or Ethereum outperforms the next day, using four classifiers compared against a naive baseline with walk-forward validation.
 
-The full analysis, code, and figures are in [`Stock_Sector_And_Crypto_Analysis.ipynb`](Stock_Sector_And_Crypto_Analysis.ipynb).
+The full analyses are in two notebooks:
+- [`notebooks/01_sector_factors.ipynb`](notebooks/01_sector_factors.ipynb)
+- [`notebooks/02_btc_eth_prediction.ipynb`](notebooks/02_btc_eth_prediction.ipynb)
 
 ## Key findings
 
@@ -18,8 +20,12 @@ The full analysis, code, and figures are in [`Stock_Sector_And_Crypto_Analysis.i
 | PC3 | 5.6% | **Growth vs commodities.** Information technology vs energy. |
 
 - The component time series line up with known market events: the COVID crash (March 2020), the 2022 rate-hiking cycle, the November 2020 vaccine rotation (the largest PC3 move), and the April 2025 tariff shock.
-- **Sectors are clearly visible in co-movement.** About two-thirds of each stock's 5 nearest neighbours (in 10-component PCA space) belong to its own sector, compared with about 8% by chance. t-SNE and UMAP keep this structure (purity about 0.67–0.70) when compressing it to 2-D.
+- **Sectors are clearly visible in co-movement.** About two-thirds of each stock's 5 nearest neighbours (in 10-component PCA space) belong to its own sector, compared with about 8% by chance. t-SNE (0.68) and UMAP (0.69) keep this structure when compressing it to 2-D.
 - Sector labels are imperfect, though. Tech and communication services behave as one cluster, and consumer discretionary splits between tech-like names (AMZN, TSLA) and traditional retailers.
+
+![Mean component loading by sector](figures/sector_loadings.png)
+
+![Stocks embedded by return co-movement, coloured by GICS sector](figures/embeddings.png)
 
 ### Part 2: BTC vs ETH next-day outperformance (Nov 2017 – Apr 2026)
 
@@ -53,7 +59,32 @@ Results from a chronological 60/20/20 split. The baseline always predicts the ma
 ## Limitations
 
 - **Survivorship bias.** The stock universe is today's large caps, chosen in hindsight. Two tickers on the original list (EA, AVB) are no longer available from Yahoo Finance and are excluded.
-- **Data drift.** Yahoo Finance revises adjusted prices and removes delisted tickers, so re-running the notebook later can change the results slightly.
+- **Data drift.** Yahoo Finance revises adjusted prices and removes delisted tickers. The cached snapshot in `data/` keeps these results reproducible, but refreshing it from Yahoo can change them slightly.
 - **Static factors.** The PCA covers the full decade at once. A rolling-window version would show how the factor structure changes over time.
 - **Narrow features.** Part 2 only tests lagged returns. It does not use volume, volatility, funding rates or on-chain data.
+
+## Project structure
+
+```
+├── notebooks/
+│   ├── 01_sector_factors.ipynb      # Part 1: PCA, sector loadings, t-SNE / UMAP
+│   └── 02_btc_eth_prediction.ipynb  # Part 2: classifiers, significance tests, walk-forward
+├── src/
+│   ├── config.py                    # analysis window, seeds, paths, stock universe
+│   ├── data.py                      # Yahoo Finance download + parquet cache
+│   ├── factors.py                   # standardized PCA via SVD, k-NN sector purity
+│   └── crypto_models.py             # lag features, models, neural network training
+├── data/                            # cached price snapshot (May 2016 – Apr 2026)
+├── figures/                         # figures saved by the notebooks
+└── requirements.txt
+```
+
+## Running it
+
+```bash
+pip install -r requirements.txt
+jupyter notebook notebooks/
+```
+
+The notebooks read prices from the cached snapshot in `data/`. Delete those files to re-download from Yahoo Finance.
 
